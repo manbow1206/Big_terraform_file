@@ -1,0 +1,23 @@
+#「version」 ビルドスペックのバージョン
+version: 0.2
+
+#「phases」ビルドの各フェーズでどういったコマンドを実行するか定義する大元のキー
+phases:
+  #「pre_build」ビルド前に実行するコマンド定義
+  pre_build:
+    commands:
+    - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+    - REPO=$(aws ecr describe-repositories --repository-names example --output text --query "repositories[0].repositoryUri")
+    - IMAGE=$REPO:latest
+    #「build」ビルドする際に実行するコマンドの定義
+  build:
+    commands:
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
+    #「post_build」ビルド後び実行するコマンド
+  post_build:
+    commands:
+    - printf '[{"name":"example","imageUri":"%s"}]' $IMAGE > imagedefinitions.json
+    #「artifacts」ビルド後に生成した成果物(アーティファクト)の設置場所
+artifacts:
+  files: imagedefinitions.json
